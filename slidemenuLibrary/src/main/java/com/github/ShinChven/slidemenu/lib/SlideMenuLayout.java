@@ -13,6 +13,7 @@ import android.widget.RelativeLayout;
  */
 public class SlideMenuLayout extends RelativeLayout {
 
+    private static final int MOVE_SIZE = 10;
     private FrameLayout mMainMenu;
     private FrameLayout mLeftMenu;
     private FrameLayout mRightMenu;
@@ -38,11 +39,13 @@ public class SlideMenuLayout extends RelativeLayout {
         mRightMenu = new FrameLayout(context);
 
         mMainMenu.setBackgroundColor(Color.BLUE);
-        mLeftMenu.setBackgroundColor(Color.CYAN);
+        mLeftMenu.setBackgroundColor(Color.RED);
         mRightMenu.setBackgroundColor(Color.GRAY);
 
-        addView(mMainMenu);
+
+        // add views from left to right
         addView(mLeftMenu);
+        addView(mMainMenu);
         addView(mRightMenu);
     }
 
@@ -71,13 +74,56 @@ public class SlideMenuLayout extends RelativeLayout {
     public boolean dispatchTouchEvent(MotionEvent ev) {
         if (!isSliding) {
             getEventType(ev);
+            return true;
         }
+        if (isVertical) {
+            switch (ev.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    break;
+                case MotionEvent.ACTION_MOVE:
+                    int currentScrollX = getScrollX();
+                    int dist = (int) (ev.getX() - lastPoint.x);
+                    int expectx = -dist + currentScrollX;
+                    int finalX = 0;
+                    if (expectx < 0) {
+                        finalX = Math.max(expectx, -mLeftMenu.getMeasuredWidth());
+                    } else {
+                        finalX = Math.min(expectx, mRightMenu.getMeasuredWidth());
+                    }
+                    scrollTo(finalX, 0);
+                    lastPoint.x = (int) ev.getX();
+                    break;
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_CANCEL:
+                    isVertical = false;
+                    isSliding = false;
+                    invalidate();
+                    break;
 
+            }
+        }else {
+
+            switch (ev.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    break;
+                case MotionEvent.ACTION_MOVE:
+
+                    break;
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_CANCEL:
+                    isVertical = false;
+                    isSliding = false;
+                    invalidate();
+                    break;
+
+            }
+        }
 
         return super.dispatchTouchEvent(ev);
     }
 
     private Point lastPoint = new Point();
+    private boolean isVertical;
 
     private void getEventType(MotionEvent ev) {
         switch (ev.getActionMasked()) {
@@ -85,9 +131,22 @@ public class SlideMenuLayout extends RelativeLayout {
                 lastPoint.x = (int) ev.getX();
                 lastPoint.y = (int) ev.getY();
 
-
                 break;
             case MotionEvent.ACTION_MOVE:
+                int x = (int) Math.abs(lastPoint.x - ev.getX());
+                int y = (int) Math.abs(lastPoint.y - ev.getY());
+                if (x >= MOVE_SIZE && x > y) {
+                    isSliding = true;
+                    isVertical = true;
+                    lastPoint.x = (int) ev.getX();
+                    lastPoint.y = (int) ev.getY();
+                } else if (y >= MOVE_SIZE && y > x) {
+                    isSliding = true;
+                    isVertical = false;
+                    lastPoint.x = (int) ev.getX();
+                    lastPoint.y = (int) ev.getY();
+                }
+
                 break;
             case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_CANCEL:
